@@ -17,6 +17,11 @@ class First_screen(arcade.View):
         self.manager = arcade.gui.UIManager()
         self.manager.enable()
 
+        self.shared_messages = []  # shared list passed to both screens
+
+        self.student_screen = Student_screen(self, self.shared_messages)
+        self.teacher_screen = Teacher_screen(self, self.shared_messages)
+
         my_button_2 = arcade.gui.UIFlatButton(text="Teacher", width=200)
         my_button_2.center_x = 300
         my_button_2.center_y = WINDOW_HEIGHT // 2
@@ -32,10 +37,15 @@ class First_screen(arcade.View):
         self.manager.add(my_button_2)
 
     def go_to_student_screen(self, event):
-        self.window.show_view(Student_screen())
+        self.manager.disable()  # disable before leaving
+        self.window.show_view(self.student_screen)
 
     def go_to_teacher_screen(self, event):
-        self.window.show_view(Teacher_screen())
+        self.manager.disable()  # disable before leaving
+        self.window.show_view(self.teacher_screen)
+
+    def on_show_view(self):
+        self.manager.enable()
 
     def on_draw(self):
         self.clear()
@@ -43,43 +53,41 @@ class First_screen(arcade.View):
 
 
 class Student_screen(arcade.View):
-    def __init__(self):
+    def __init__(self, first_screen, messages):
         super().__init__()
+        self.first_screen = first_screen
+        self.messages = messages  # shared list
+
         arcade.set_background_color(arcade.color.WHITE)
 
         self.manager = arcade.gui.UIManager()
-        self.manager.enable()
-
-        self.messages = []
 
         self.title_text = arcade.Text("Student Screen", WINDOW_WIDTH // 2, WINDOW_HEIGHT - 50, arcade.color.BLACK, font_size=20, anchor_x="center")
 
-        self.input_box = arcade.gui.UIInputText(
-            x=20,
-            y=20,
-            width=WINDOW_WIDTH - 160,
-            height=40,
-            text="",
-            text_color=arcade.color.BLACK
-        )
+        self.back_button = arcade.gui.UIFlatButton(x=10, y=WINDOW_HEIGHT - 50, width=100, height=35, text="Back")
+        self.back_button.on_click = self.go_back
+        self.manager.add(self.back_button)
 
-        self.send_button = arcade.gui.UIFlatButton(
-            x=WINDOW_WIDTH - 130,
-            y=20,
-            width=110,
-            height=40,
-            text="Send"
-        )
-
+        self.input_box = arcade.gui.UIInputText(x=20, y=20, width=WINDOW_WIDTH - 160, height=40, text="", text_color=arcade.color.BLACK)
+        self.send_button = arcade.gui.UIFlatButton(x=WINDOW_WIDTH - 130, y=20, width=110, height=40, text="Send")
         self.send_button.on_click = self.on_send
-
-        self.manager.add(self.input_box.with_background(color=arcade.color.LIGHT_GRAY))
+        input_with_bg = self.input_box.with_background(color=arcade.color.LIGHT_GRAY)
+        self.manager.add(input_with_bg)
         self.manager.add(self.send_button)
+
+    def on_show_view(self):
+        self.manager.enable()  # enable only when this view is shown
+
+    def on_hide_view(self):
+        self.manager.disable()  # disable when leaving this view
+
+    def go_back(self, event):
+        self.window.show_view(self.first_screen)
 
     def on_send(self, event):
         message = self.input_box.text.strip()
         if message:
-            self.messages.append(message)
+            self.messages.append(("Student", message))
             self.input_box.text = ""
 
     def on_draw(self):
@@ -87,51 +95,50 @@ class Student_screen(arcade.View):
         self.title_text.draw()
 
         y = 80
-        for message in reversed(self.messages):
-            arcade.draw_text(message, WINDOW_WIDTH - 20, y, arcade.color.BLACK, font_size=14, anchor_x="right")
+        for sender, message in reversed(self.messages):
+            color = arcade.color.BLUE if sender == "Student" else arcade.color.RED
+            arcade.draw_text(f"{sender}: {message}", WINDOW_WIDTH - 20, y, color, font_size=14, anchor_x="right")
             y += 25
 
         self.manager.draw()
 
 
 class Teacher_screen(arcade.View):
-    def __init__(self):
+    def __init__(self, first_screen, messages):
         super().__init__()
+        self.first_screen = first_screen
+        self.messages = messages  # same shared list
+
         arcade.set_background_color(arcade.color.WHITE)
 
         self.manager = arcade.gui.UIManager()
-        self.manager.enable()
-
-        self.messages = []
 
         self.title_text = arcade.Text("Teacher Screen", WINDOW_WIDTH // 2, WINDOW_HEIGHT - 50, arcade.color.BLACK, font_size=20, anchor_x="center")
 
-        self.input_box = arcade.gui.UIInputText(
-            x=20,
-            y=20,
-            width=WINDOW_WIDTH - 160,
-            height=40,
-            text="",
-            text_color=arcade.color.BLACK
-        )
+        self.back_button = arcade.gui.UIFlatButton(x=10, y=WINDOW_HEIGHT - 50, width=100, height=35, text="Back")
+        self.back_button.on_click = self.go_back
+        self.manager.add(self.back_button)
 
-        self.send_button = arcade.gui.UIFlatButton(
-            x=WINDOW_WIDTH - 130,
-            y=20,
-            width=110,
-            height=40,
-            text="Send"
-        )
-
+        self.input_box = arcade.gui.UIInputText(x=20, y=20, width=WINDOW_WIDTH - 160, height=40, text="", text_color=arcade.color.BLACK)
+        self.send_button = arcade.gui.UIFlatButton(x=WINDOW_WIDTH - 130, y=20, width=110, height=40, text="Send")
         self.send_button.on_click = self.on_send
-
-        self.manager.add(self.input_box.with_background(color=arcade.color.LIGHT_GRAY))
+        input_with_bg = self.input_box.with_background(color=arcade.color.LIGHT_GRAY)
+        self.manager.add(input_with_bg)
         self.manager.add(self.send_button)
+
+    def on_show_view(self):
+        self.manager.enable()  # enable only when this view is shown
+
+    def on_hide_view(self):
+        self.manager.disable()  # disable when leaving this view
+
+    def go_back(self, event):
+        self.window.show_view(self.first_screen)
 
     def on_send(self, event):
         message = self.input_box.text.strip()
         if message:
-            self.messages.append(message)
+            self.messages.append(("Teacher", message))
             self.input_box.text = ""
 
     def on_draw(self):
@@ -139,8 +146,9 @@ class Teacher_screen(arcade.View):
         self.title_text.draw()
 
         y = 80
-        for message in reversed(self.messages):
-            arcade.draw_text(message, WINDOW_WIDTH - 20, y, arcade.color.BLACK, font_size=14, anchor_x="right")
+        for sender, message in reversed(self.messages):
+            color = arcade.color.BLUE if sender == "Student" else arcade.color.RED
+            arcade.draw_text(f"{sender}: {message}", 20, y, color, font_size=14, anchor_x="left")
             y += 25
 
         self.manager.draw()
@@ -148,7 +156,8 @@ class Teacher_screen(arcade.View):
 
 def main():
     window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)
-    window.show_view(First_screen())
+    first_screen = First_screen()
+    window.show_view(first_screen)
     arcade.run()
 
 main()
