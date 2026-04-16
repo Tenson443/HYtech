@@ -73,6 +73,14 @@ def get_stats():
     return jsonify(stats.to_dict(orient="records"))
 
 
+@app.route("/clear_messages", methods=["POST"])
+def clear_messages():
+    global df
+    df = pd.DataFrame(columns=["timestamp", "role", "student", "message", "subject"])
+    df.to_csv(DB_FILE, index=False)
+    return jsonify({"status": "ok"})
+
+
 if __name__ == "__main__":
     print("Starting Chat & Classification Server on port 5000...")
     app.run(host='0.0.0.0', port=5000, debug=True)
